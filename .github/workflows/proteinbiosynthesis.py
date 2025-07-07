@@ -16,12 +16,7 @@ mRNA = coding_DNA.transcribe()
 
 
 
-
-
-
-
-
-
+#test
 
 
 
