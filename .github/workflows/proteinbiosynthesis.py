@@ -4,7 +4,7 @@ from Bio.Seq import Seq
 
 def read():
     path = "C:/Users/leand/Downloads/"
-    filename = "1a80.txt"
+    filename = "1a80clean.txt"
     file = open(path  + filename, "r")
     global gene
     gene = file.read()
@@ -12,23 +12,31 @@ def read():
     gene = gene.replace ("\n", "").replace("\r", "")
     return gene
 
-def coding_DNA_sequence_biosynthesis():
+def coding_DNA_sequence_biosynthesis():#actually input is non coding strand here, change before
     coding_dna = Seq(gene)
     mrna = coding_dna.transcribe()
-    amino_acids = mrna.translate()
-    return mrna and amino_acids
+    start_index = mrna.find("AUG")
+    if start_index != -1:
+        trimmed_mrna = mrna[start_index:]
+        amino_acids = trimmed_mrna.translate()
+    else:
+        amino_acids = coding_dna.translate()
+    print(amino_acids)
+    return mrna, amino_acids
 
 
 
 def genomic_DNA_with_known_introns():
     coding_dna = Seq(gene)
     mrna = coding_dna.transcribe()
+    global introns
     introns = []
     while True:
         user_input = input("Do you want to add introns? (y/n)")
-        if user_input == "y"
-            introns.append(input("Enter intron sequence"))
-        if input == "n":
+        if user_input == "y":
+            intron = input("Enter intron sequence")
+            introns.append(intron)
+        elif user_input == "n":
             break
         else:
             print("Enter a valid input")
@@ -37,7 +45,7 @@ def genomic_DNA_with_known_introns():
             mrna = mrna.replace(intron, "")
     amino_acids = mrna.translate()
     print(amino_acids)
-    return mrna and amino_acids
+    return mrna, amino_acids
 
 
 
