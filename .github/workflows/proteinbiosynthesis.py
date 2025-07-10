@@ -1,10 +1,8 @@
 from Bio.Seq import Seq
 
-
-
 def read():
     path = "C:/Users/leand/Downloads/"
-    filename = "1a80clean.txt"
+    filename = "1a80.txt"
     file = open(path  + filename, "r")
     global gene
     gene = file.read()
@@ -12,22 +10,47 @@ def read():
     gene = gene.replace ("\n", "").replace("\r", "")
     return gene
 
-def coding_DNA_sequence_biosynthesis():#actually input is non coding strand here, change before
-    coding_dna = Seq(gene)
+def non_coding_strand_to_coding_strand(): #helper function, to change from non coding to coding strand etc.
+    global coding_strand
+    global non_coding_strand
+    noncoding_strand = gene
+    coding_strand = ""
+    for base in gene:
+        if base == "A":
+            coding_strand += "T"
+        elif base == "C":
+            coding_strand += "G"
+        elif base == "G":
+            coding_strand += "C"
+        elif base == "T":
+            coding_strand += "A"
+
+def coding_to_non_coding_strand(): #helper function for both GUI versions later
+    global non_coding_strand
+    global coding_strand
+    coding_strand = gene
+    non_coding_strand = ""
+    for base in gene:
+        if base == "A":
+            non_coding_strand += "T"
+        elif base == "C":
+            non_coding_strand += "G"
+        elif base == "G":
+            non_coding_strand += "C"
+        elif base == "T":
+            non_coding_strand += "A"
+
+def coding_DNA_sequence_biosynthesis(): #intron free
+    coding_dna = Seq(coding_strand)
     mrna = coding_dna.transcribe()
-    start_index = mrna.find("AUG")
-    if start_index != -1:
-        trimmed_mrna = mrna[start_index:]
-        amino_acids = trimmed_mrna.translate()
-    else:
-        amino_acids = coding_dna.translate()
+    amino_acids = mrna.translate(stop_symbol=" ")
     print(amino_acids)
     return mrna, amino_acids
 
 
 
 def genomic_DNA_with_known_introns():
-    coding_dna = Seq(gene)
+    coding_dna = Seq(coding_strand)
     mrna = coding_dna.transcribe()
     global introns
     introns = []
@@ -51,8 +74,16 @@ def genomic_DNA_with_known_introns():
 
 
 read()
-user_input = input("type DNA type")
 
+dna_type = input("Is your sequence a coding strand, non coding strand or mrna")
+if dna_type == "non coding strand":
+    non_coding_strand_to_coding_strand() #for GUI and also translation
+elif dna_type == "mrna":
+    coding_strand = Seq(gene).back_transcribe()
+else:
+    coding_to_non_coding_strand() #for GUI
+
+user_input = input("How's it looking for introns")
 if user_input == "CDS": #already spliced and without introns
     coding_DNA_sequence_biosynthesis()
 elif user_input == "genomic DNA with known introns": #manually input introns for splicing
