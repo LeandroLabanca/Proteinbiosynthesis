@@ -47,8 +47,6 @@ def coding_DNA_sequence_biosynthesis(): #intron free
     print(amino_acids)
     return mrna, amino_acids
 
-
-
 def genomic_DNA_with_known_introns():
     coding_dna = Seq(coding_strand)
     mrna = coding_dna.transcribe()
@@ -70,6 +68,7 @@ def genomic_DNA_with_known_introns():
     print(amino_acids)
     return mrna, amino_acids
 
+def intron_search_database:
 
 
 
@@ -84,7 +83,7 @@ else:
     coding_to_non_coding_strand() #for GUI
 
 user_input = input("How's it looking for introns")
-if user_input == "CDS": #already spliced and without introns
+if user_input == "without introns": #already spliced and without introns
     coding_DNA_sequence_biosynthesis()
 elif user_input == "genomic DNA with known introns": #manually input introns for splicing
     genomic_DNA_with_known_introns()
