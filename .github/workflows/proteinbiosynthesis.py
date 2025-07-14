@@ -68,7 +68,19 @@ def genomic_DNA_with_known_introns():
     print(amino_acids)
     return mrna, amino_acids
 
-def intron_search_database:
+def intron_search_database():
+    pass
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -77,6 +89,7 @@ read()
 dna_type = input("Is your sequence a coding strand, non coding strand or mrna")
 if dna_type == "non coding strand":
     non_coding_strand_to_coding_strand() #for GUI and also translation
+    print(coding_strand)
 elif dna_type == "mrna":
     coding_strand = Seq(gene).back_transcribe()
 else:
@@ -90,5 +103,5 @@ elif user_input == "genomic DNA with known introns": #manually input introns for
 elif user_input == "genomic DNA with no known introns check Database NCBII": #check if gene/DNA is in database with introns removed, use that one
     pass
 else:
-    print("An approach to typical intron structures will be made and they will be removed")
-    pass
+    print("Everything gets translated such as CDS")
+    coding_DNA_sequence_biosynthesis()
