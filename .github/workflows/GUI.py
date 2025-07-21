@@ -1,27 +1,41 @@
-import sys
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAction, QApplication, QLabel, QMainWindow, QMenu
+from PyQt5.QtGui import QIcon, QKeySequence
+from PyQt5.QtWidgets import (
+    QAction,
+    QApplication,
+    QCheckBox,
+    QLabel,
+    QMainWindow,
+    QStatusBar,
+    QToolBar,
+)
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.setWindowTitle("My Awesome App")
 
-    def contextMenuEvent(self, e):
-        context = QMenu(self)
-        context.addAction(QAction("test 1", self))
-        context.addAction(QAction("test 2", self))
-        context.addAction(QAction("test 3", self))
-        context.exec(e.globalPos())
+        label = QLabel("Hello")
+        label.setAlignment(Qt.AlignCenter)
+        self.setCentralWidget(label)
 
-        self.setMinimumSize(1920, 1080)
-        self.setMaximumSize(3840, 2160)
+        toolbar = QToolBar("My Toolbar")
+        self.addToolBar(toolbar)
+
+        button_action = QAction("Button", self)
+        button_action.setStatusTip("This is your button")
+        button_action.triggered.connect(self.toolbar_button_clicked)
+        button_action.setCheckable(True)
+        toolbar.addAction(button_action)
+
+        self.setStatusBar(QStatusBar(self))
+
+    def toolbar_button_clicked(self, s):
+        print("click", s)
 
 
 
-
-
-
-app=QApplication(sys.argv)
+app = QApplication([])
 window = MainWindow()
 window.show()
-app.exec_()
+app.exec()
