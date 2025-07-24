@@ -15,5 +15,14 @@ x_cp = cullpdb[:, :, 0:20]
 ss_channels = cullpdb[:, :, 22:31]
 y_cp = np.argmax(ss_channels, axis= -1)
 
+def dssp9_to_dssp3(y):
+    y3 = np.copy(y)
+    y3[y3==0] = 0
+    y3[y3==1] = 1
+    y3[y3>1] = 2
+    return y3
+y_cb = dssp9_to_dssp3(y_cb)
+y_cp = dssp9_to_dssp3(y_cp)
+
 x_train, x_validation, y_train, y_validation = train_test_split(x_cp, y_cp, test_size=0.1, random_state=42)
 
