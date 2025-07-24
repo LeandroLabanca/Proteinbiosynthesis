@@ -16,4 +16,4 @@ ML_Model.fit(x_train, y_train, validation_data=(x_validation, y_validation), epo
 
 ML_Model.evaluate(x_cb, y_cb)
 
-ML_Model.save("Secondary_Structure_Model.h5")
+ML_Model.save("Secondary_Structure_Model.keras")
