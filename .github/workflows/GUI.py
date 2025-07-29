@@ -1,7 +1,8 @@
 import sys
 from PyQt5.QtWidgets import (
-QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton, QComboBox, QRadioButton, QButtonGroup, QMessageBox
+QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton, QComboBox, QRadioButton, QButtonGroup, QMessageBox, QScrollArea, QFrame
 )
+from PyQt5.QtCore import Qt
 
 class Biological_Sequence_Input(QWidget):
     def __init__(self):
@@ -45,11 +46,63 @@ class Biological_Sequence_Input(QWidget):
             if ok:
                 print("Introns:", intron_info)
 
+class DNA_Visualizer(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.layout = QVBoxLayout()
+        self.top_strand = QHBoxLayout()
+        self.bottom_strand = QHBoxLayout()
+
+        self.top_label = QLabel("5' ->")
+        self.bottom_label = QLabel("3' ->")
+
+        self.top_strand.addWidget(self.top_label)
+        self.bottom_strand.addWidget(self.bottom_label)
+
+        self.layout.addLayout(self.top_strand)
+        self.layout.addLayout(self.bottom_strand)
+
+        self.setLayout(self.layout)
+
+    def Update_DNA_Strands(self, seq, is_coding_strand = True):
+        self._clear_layout(self.top_strand)
+        self._clear_layout(self.bottom_strand)
+
+        self.top_strand.addWidget(QLabel("5' ->"))
+        self.bottom_strand.addWidget(QLabel("3' ->"))
+
+        seq = seq.upper()
+        if is_coding_strand:
+            coding_strand = seq
+            template = "".join(BASE_PAIR.get(b, "?") for b in seq)
+        else:
+            template = seq
+            template = "".join(BASE_PAIR.get(b, "?") for b in seq)
+
+        for c, t in zip(coding_strand, template):
+            Top_Strand = QLabel(c)
+            Top_Strand.setFrameStyle(QFrame.Box)
+            Bottom_Strand = QLabel(t)
+            Bottom_Strand.setFrameStyle(QFrame.Box)
+            self.top_strand.addWidget(Top_Strand)
+            self.bottom_strand.addWidget(Bottom_Strand)
+    def _clear_layout(self, layout):
+        while layout.cont():
+            item = layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+
+
+
+
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Secondary Protein Structure Predictor")
-
+        self.setMinimumSize(800, 600)
+        self.setMaximumSize(3840, 2160)
 
         main_layout = QVBoxLayout()
         self.seq_input = Biological_Sequence_Input()
