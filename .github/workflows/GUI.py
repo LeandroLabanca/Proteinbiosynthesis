@@ -106,14 +106,23 @@ class MainWindow(QMainWindow):
 
         main_layout = QVBoxLayout()
         self.seq_input = Biological_Sequence_Input()
+        self.dna_graphics = DNA_Visualizer()
 
-        self.DNA_Graphics = QLabel("DNA Visualizer Placeholder")
+        self.seq_input.sequence_input.textChanged.connect(self.update_dna_view)
+
         self.Protein_Viewer = QLabel("Protein Viewer Placeholder")
         self.Predict_Button = QPushButton("Predict Secondary Protein Structure")
         self.Result_Viewer = QLabel("Prediction Result Placeholder")
 
         main_layout.addWidget(self.seq_input)
-        main_layout.addWidget(self.DNA_Graphics)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(self.dna_graphics)
+        scroll.setMinimumHeight(120)
+
+
+        main_layout.addWidget(QLabel("DNA Strand Visualizer:"))
+        main_layout.addWidget(scroll)
         main_layout.addWidget(self.Protein_Viewer)
         main_layout.addWidget(self.Predict_Button)
         main_layout.addWidget(self.Result_Viewer)
@@ -121,6 +130,11 @@ class MainWindow(QMainWindow):
         container = QWidget()
         container.setLayout(main_layout)
         self.setCentralWidget(container)
+
+    def update_dna_view(self):
+        sequence = self.seq_input.sequence_input.toPlainText()
+        is_coding_strand = self.seq_input.strand_group.checkedButton().text() == "Coding Strand"
+        self.dna_graphics.update_strands(sequence, is_coding_strand)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
