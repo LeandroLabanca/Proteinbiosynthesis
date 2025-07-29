@@ -13,7 +13,7 @@ def read():
 def non_coding_strand_to_coding_strand(): #helper function, to change from non coding to coding strand etc.
     global coding_strand
     global non_coding_strand
-    noncoding_strand = gene
+    non_coding_strand = gene
     coding_strand = ""
     for base in gene:
         if base == "A":
@@ -24,6 +24,7 @@ def non_coding_strand_to_coding_strand(): #helper function, to change from non c
             coding_strand += "C"
         elif base == "T":
             coding_strand += "A"
+    return coding_strand, non_coding_strand
 
 def coding_to_non_coding_strand(): #helper function for both GUI versions later
     global non_coding_strand
@@ -39,12 +40,13 @@ def coding_to_non_coding_strand(): #helper function for both GUI versions later
             non_coding_strand += "C"
         elif base == "T":
             non_coding_strand += "A"
+    return coding_strand, non_coding_strand
 
 def coding_DNA_sequence_biosynthesis(): #intron free
     coding_dna = Seq(coding_strand)
+    global mrna
     mrna = coding_dna.transcribe()
     amino_acids = mrna.translate(stop_symbol=" ")
-    print(amino_acids)
     return mrna, amino_acids
 
 def genomic_DNA_with_known_introns():
@@ -89,19 +91,21 @@ read()
 dna_type = input("Is your sequence a coding strand, non coding strand or mrna")
 if dna_type == "non coding strand":
     non_coding_strand_to_coding_strand() #for GUI and also translation
-    print(coding_strand)
+    coding_strand, non_coding_strand = non_coding_strand_to_coding_strand() #
 elif dna_type == "mrna":
     coding_strand = Seq(gene).back_transcribe()
 else:
     coding_to_non_coding_strand() #for GUI
+    coding_strand, non_coding_strand = coding_to_non_coding_strand()
 
 user_input = input("How's it looking for introns")
 if user_input == "without introns": #already spliced and without introns
-    coding_DNA_sequence_biosynthesis()
+    mrna, amino_acids = coding_DNA_sequence_biosynthesis()
 elif user_input == "genomic DNA with known introns": #manually input introns for splicing
-    genomic_DNA_with_known_introns()
+    mrna, amino_acids = genomic_DNA_with_known_introns()
 elif user_input == "genomic DNA with no known introns check Database NCBII": #check if gene/DNA is in database with introns removed, use that one
     pass
 else:
     print("Everything gets translated such as CDS")
-    coding_DNA_sequence_biosynthesis()
+    mrna, amino_acids = coding_DNA_sequence_biosynthesis()
+

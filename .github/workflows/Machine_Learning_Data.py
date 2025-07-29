@@ -17,9 +17,9 @@ y_cp = np.argmax(ss_channels, axis= -1)
 
 def dssp9_to_dssp3(y):
     y3 = np.copy(y)
-    y3[y3==0] = 0
-    y3[y3==1] = 1
-    y3[y3>1] = 2
+    y3[np.isin(y, [0,3,4])] = 0
+    y3[np.isin(y, [1, 2])] = 1
+    y3[np.isin(y, [5, 6, 7, 8])] = 2
     return y3
 y_cb = dssp9_to_dssp3(y_cb)
 y_cp = dssp9_to_dssp3(y_cp)
