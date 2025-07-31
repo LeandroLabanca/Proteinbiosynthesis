@@ -1,12 +1,16 @@
 import sys
+from operator import index
 from PyQt5.QtWidgets import (
-QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton, QComboBox, QRadioButton, QButtonGroup, QMessageBox, QScrollArea, QFrame
+QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton, QComboBox, QRadioButton, QButtonGroup, QMessageBox, QScrollArea, QFrame, QInputDialog
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QColor, QPalette
+from PyQt5.QtCore import QTimer, Qt
+from proteinbiosynthesis import mRNA_to_DNA
 
 class Biological_Sequence_Input(QWidget):
     def __init__(self):
         super().__init__()
+        self.ignore_validation = False
         layout = QVBoxLayout()
 
         self.seq_type = QComboBox()
@@ -19,18 +23,21 @@ class Biological_Sequence_Input(QWidget):
 
         self.seq_type.currentIndexChanged.connect(self.handle_introns)
         self.strand_group = QButtonGroup(self)
-        coding_strand = QRadioButton("Coding Strand")
-        non_coding_strand = QRadioButton("Non-Coding Strand")
-        coding_strand.setChecked(True)
-        self.strand_group.addButton(coding_strand)
-        self.strand_group.addButton(non_coding_strand)
+        self.coding_strand = QRadioButton("Coding Strand")
+        self.non_coding_strand = QRadioButton("Non-Coding Strand")
+        self.coding_strand.setChecked(True)
+        self.strand_group.addButton(self.coding_strand)
+        self.strand_group.addButton(self.non_coding_strand)
 
         self.sequence_input = QTextEdit()
         self.sequence_input.setPlaceholderText("Paste or type your biological sequence...")
 
+        self.sequence_input.textChanged.connect(self.validate_sequence_input)
+        self._last_valid_text = ""
+
         strand_layout = QHBoxLayout()
-        strand_layout.addWidget(coding_strand)
-        strand_layout.addWidget(non_coding_strand)
+        strand_layout.addWidget(self.coding_strand)
+        strand_layout.addWidget(self.non_coding_strand)
 
         layout.addWidget(QLabel("Sequence Type:"))
         layout.addWidget(self.seq_type)
@@ -40,75 +47,183 @@ class Biological_Sequence_Input(QWidget):
 
         self.setLayout(layout)
 
+    def validate_sequence_input(self):
+        seq_type = self.seq_type.currentText()
+        allowed = {'A', 'U', 'G', 'C'} if "mRNA" in seq_type else {'A', 'T', 'G', 'C'}
+
+        current_text = self.sequence_input.toPlainText().upper()
+        valid_text = ''.join([ch for ch in current_text if ch in allowed])
+
+        if current_text != valid_text:
+            self.sequence_input.blockSignals(True)
+            self.sequence_input.setText(valid_text)
+            self.sequence_input.blockSignals(False)
+
+            QMessageBox.warning(self, "Invalid Character", f"Only the following characters are allowed for {seq_type}:\n{', '.join(sorted(allowed))}")
+
     def handle_introns(self):
-        if self.seq_type.currentText() == "Genomic DNA with known introns":
-            intron_info, ok = QMessageBox.information(self, "Input Introns", "Enter Intron Positions (e.g. 52-75)")
+        current = self.seq_type.currentText()
+        if current =="Genomic DNA with known introns":
+            intron_info, ok = QInputDialog.getText(self, "Input Introns", "Enter intron positions (e.g. 54-72")
             if ok:
                 print("Introns:", intron_info)
 
+        if current == "mRNA":
+            self.coding_strand.setChecked(True)
+            self.coding_strand.setEnabled(False)
+            self.non_coding_strand.setEnabled(False)
+        else:
+            self.coding_strand.setEnabled(True)
+            self.non_coding_strand.setEnabled(True)
+
+Bases = ['A', 'T', 'G', 'C']
+Base_Colors = {
+    'A': '#A3E635',
+    'T': '#F87171',
+    'G': '#60A5FA',
+    'C': '#FACC15'
+}
+BASE_PAIR = {
+    'A': 'T',
+    'T': 'A',
+    'G': 'C',
+    'C': 'G'
+}
+
+class Base_Button(QPushButton):
+    def __init__(self, base, strand, position, callback):
+        super().__init__(base)
+        self.strand = strand
+        self.position = position
+        self.callback = callback
+        self.setFixedSize(30,30)
+        self.update_color()
+        self.clicked.connect(self.cycle_base)
+
+    def update_color(self):
+        base = self.text()
+        color = Base_Colors.get(base, '#E5E7EB')
+        pal = self.palette()
+        pal.setColor(QPalette.Button, QColor(color))
+        self.setAutoFillBackground(True)
+        self.setPalette(pal)
+        self.setStyleSheet(f"background-color: {color}; border : 1px solid #333;")
+
+    def cycle_base(self):
+        current = self.text()
+        i = Bases.index(current) if current in Bases else 0
+        new_base = Bases[(i+1)%len(Bases)]
+        self.setText(new_base)
+        self.update_color()
+        self.callback(self.strand, self.position, new_base)
+
+
+
 class DNA_Visualizer(QWidget):
-    def __init__(self):
+    def __init__(self, sequence_changed_callback):
         super().__init__()
         self.layout = QVBoxLayout()
         self.top_strand = QHBoxLayout()
+        self.bonds = QHBoxLayout()
         self.bottom_strand = QHBoxLayout()
 
-        self.top_label = QLabel("5' ->")
-        self.bottom_label = QLabel("3' ->")
+        self.top_strand.addWidget(QLabel("5' ->"))
+        self.bonds.addWidget(QLabel("    "))
+        self.bottom_strand.addWidget(QLabel("3' ->"))
 
-        self.top_strand.addWidget(self.top_label)
-        self.bottom_strand.addWidget(self.bottom_label)
+        self.top_strand.setSpacing(2)
+        self.bottom_strand.setSpacing(2)
+        self.bonds.setSpacing(2)
 
         self.layout.addLayout(self.top_strand)
+        self.layout.addLayout(self.bonds)
         self.layout.addLayout(self.bottom_strand)
 
+        self.layout.setSizeConstraint(QVBoxLayout.SetFixedSize)
+        self.layout.setSpacing(5)
         self.setLayout(self.layout)
+
+        self.top_bases = []
+        self.bottom_bases = []
+        self.is_coding_strand = True
+        self.sequence_changed_callback = sequence_changed_callback
 
     def Update_DNA_Strands(self, seq, is_coding_strand = True):
         self._clear_layout(self.top_strand)
+        self._clear_layout(self.bonds)
         self._clear_layout(self.bottom_strand)
 
+        self.top_bases = []
+        self.bottom_bases = []
+        self.is_coding_strand = is_coding_strand
+
         self.top_strand.addWidget(QLabel("5' ->"))
+        self.bonds.addWidget(QLabel("    "))
         self.bottom_strand.addWidget(QLabel("3' ->"))
 
         seq = seq.upper()
-        if is_coding_strand:
-            coding_strand = seq
-            template = "".join(BASE_PAIR.get(b, "?") for b in seq)
-        else:
-            template = seq
-            template = "".join(BASE_PAIR.get(b, "?") for b in seq)
+        for i, base in enumerate(seq):
+            if is_coding_strand:
+                top_base = base
+                bottom_base = BASE_PAIR.get(base, '?')
+            else:
+                bottom_base = base
+                top_base = BASE_PAIR.get(base, '?')
 
-        for c, t in zip(coding_strand, template):
-            Top_Strand = QLabel(c)
-            Top_Strand.setFrameStyle(QFrame.Box)
-            Bottom_Strand = QLabel(t)
-            Bottom_Strand.setFrameStyle(QFrame.Box)
-            self.top_strand.addWidget(Top_Strand)
-            self.bottom_strand.addWidget(Bottom_Strand)
+            top_button = Base_Button(top_base, 'top', i, self.on_base_changed)
+            bottom_button = Base_Button(bottom_base, 'bottom', i, self.on_base_changed)
+
+            self.top_strand.addWidget(top_button)
+            self.bonds.addWidget(QLabel("｜"))
+            self.bottom_strand.addWidget(bottom_button)
+
+            self.top_bases.append(top_button)
+            self.bottom_bases.append(bottom_button)
+
+
     def _clear_layout(self, layout):
-        while layout.cont():
+        while layout.count():
             item = layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)
+                widget.deleteLater()
 
+    def on_base_changed(self, strand, index, new_base):
+        if strand == 'top':
+            comp_base = BASE_PAIR.get(new_base, '?')
+            self.bottom_bases[index].setText(comp_base)
+            self.bottom_bases[index].update_color()
+        else:
+            comp_base = BASE_PAIR.get(new_base , '?')
+            self.top_bases[index].setText(comp_base)
+            self.top_bases[index].update_color()
 
+        if self.is_coding_strand:
+            new_seq = ''.join(btn.text() for btn in self.top_bases)
+        else:
+            new_seq = ''.join(btn.text() for btn in self.bottom_bases)
 
-
+        if self.sequence_changed_callback:
+            self.sequence_changed_callback(new_seq)
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.is_syncing = False
         self.setWindowTitle("Secondary Protein Structure Predictor")
         self.setMinimumSize(800, 600)
         self.setMaximumSize(3840, 2160)
 
         main_layout = QVBoxLayout()
         self.seq_input = Biological_Sequence_Input()
-        self.dna_graphics = DNA_Visualizer()
+        self.dna_graphics = DNA_Visualizer(self.on_sequence_changed_from_graphics)
 
-        self.seq_input.sequence_input.textChanged.connect(self.update_dna_view)
+        self.seq_input.sequence_input.textChanged.connect(self.defer_update_dna_view)
+        self._deferred_timer = QTimer(self)
+        self._deferred_timer.setSingleShot(True)
+        self._deferred_timer.timeout.connect(self.update_dna_view)
 
         self.Protein_Viewer = QLabel("Protein Viewer Placeholder")
         self.Predict_Button = QPushButton("Predict Secondary Protein Structure")
@@ -119,7 +234,7 @@ class MainWindow(QMainWindow):
         scroll.setWidgetResizable(True)
         scroll.setWidget(self.dna_graphics)
         scroll.setMinimumHeight(120)
-
+        scroll.setWidgetResizable(False)
 
         main_layout.addWidget(QLabel("DNA Strand Visualizer:"))
         main_layout.addWidget(scroll)
@@ -132,9 +247,51 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(container)
 
     def update_dna_view(self):
-        sequence = self.seq_input.sequence_input.toPlainText()
+        if self.is_syncing:
+            return
+        self.is_syncing = True
+
+        seq_type = self.seq_input.seq_type.currentText()
+        sequence = self.seq_input.sequence_input.toPlainText().upper()
         is_coding_strand = self.seq_input.strand_group.checkedButton().text() == "Coding Strand"
-        self.dna_graphics.update_strands(sequence, is_coding_strand)
+        if not sequence.strip():
+            self.dna_graphics.Update_DNA_Strands("", is_coding_strand)
+            self.is_syncing = False
+            return
+
+
+        visual_seq = sequence
+        if seq_type == "mRNA":
+            visual_seq = mRNA_to_DNA(sequence)
+            if not visual_seq:
+                QMessageBox.warning(self, "Back-transcription failed")
+                self.is_syncing = False
+                return
+
+            self.seq_input.sequence_input.blockSignals(True)
+            self.seq_input.sequence_input.setText(sequence)
+            self.seq_input.sequence_input.blockSignals(False)
+
+            self.seq_input.coding_strand.setChecked(True)
+            is_coding_strand = True
+
+        self.dna_graphics.Update_DNA_Strands(visual_seq, is_coding_strand)
+
+        self.is_syncing = False
+
+    def defer_update_dna_view(self):
+        self._deferred_timer.start(10)
+
+    def on_sequence_changed_from_graphics(self, new_sequence):
+        self.is_syncing = True
+        seq_type = self.seq_input.seq_type.currentText()
+        if seq_type == "mRNA":
+            mrna_sequence = new_sequence.replace('T', 'U')
+            self.seq_input.sequence_input.setPlainText(mrna_sequence)
+        else:
+            self.seq_input.sequence_input.setPlainText(new_sequence)
+
+        self.is_syncing = False
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
