@@ -1,15 +1,16 @@
 import sys
 from operator import index
 from PyQt5.QtWidgets import (
-QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton, QComboBox, QRadioButton, QButtonGroup, QMessageBox, QScrollArea, QFrame, QInputDialog
+QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton, QComboBox, QRadioButton, QButtonGroup, QMessageBox, QScrollArea, QFrame, QInputDialog, QDialog
 )
 from PyQt5.QtGui import QColor, QPalette
-from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from proteinbiosynthesis import mRNA_to_DNA
 
 class Biological_Sequence_Input(QWidget):
-    def __init__(self):
-        super().__init__()
+    sequence_updated = pyqtSignal(str, bool)
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.ignore_validation = False
         layout = QVBoxLayout()
 
@@ -21,7 +22,7 @@ class Biological_Sequence_Input(QWidget):
             "mRNA"
         ])
 
-        self.seq_type.currentIndexChanged.connect(self.handle_introns)
+        self.seq_type.currentIndexChanged.connect(self.On_Index_Changed)
         self.strand_group = QButtonGroup(self)
         self.coding_strand = QRadioButton("Coding Strand")
         self.non_coding_strand = QRadioButton("Non-Coding Strand")
@@ -61,13 +62,45 @@ class Biological_Sequence_Input(QWidget):
 
             QMessageBox.warning(self, "Invalid Character", f"Only the following characters are allowed for {seq_type}:\n{', '.join(sorted(allowed))}")
 
-    def handle_introns(self):
+    def On_Index_Changed(self):
         current = self.seq_type.currentText()
-        if current =="Genomic DNA with known introns":
-            intron_info, ok = QInputDialog.getText(self, "Input Introns", "Enter intron positions (e.g. 54-72")
-            if ok:
-                print("Introns:", intron_info)
+        if current == "Genomic DNA with known introns":
+            self.coding_strand.setEnabled(True)
+            self.non_coding_strand.setEnabled(True)
+            dialog = Intron_Input(self)
+            if dialog.exec_() == QDialog.Accepted:
+                mode, data = dialog.Get_Input_Data()
+                sequence = self.sequence_input.toPlainText().upper()
+                if mode == "Positions":
+                    try:
+                        Intron_Ranges = []
+                        for part in data.split(","):
+                            start, end = map(int, part.strip().split("-"))
+                            Intron_Ranges.append((start, end))
+                        Intron_Ranges.sort(reverse = True)
+                        for start, end in Intron_Ranges:
+                            start -= 1
+                            sequence = sequence[:start]+sequence[end:]
+                    except Exception as e:
+                        QMessageBox.warning(self, "Invalid Format", "Use Format like: 42-54")
+                        return
+                elif mode == "Sequences":
+                    try:
+                        sequence = sequence.upper().replace('\n', '').replace(' ', '')
+                        introns = [seq.strip().upper().replace('\n', '').replace(' ', '')for seq in data.replace(',', '\n').split('\n') if seq.strip()]
+                        for intron in introns:
+                            if intron in sequence:
+                                sequence = sequence.replace(intron, '')
+                            else:
+                                QMessageBox.information(self, "Intron not found", f"Intron {intron}' was not found.")
+                    except Exception as e:
+                        QMessageBox.warning(self, "Error")
+                self.sequence_input.blockSignals(True)
+                self.sequence_input.setText(sequence)
+                self.sequence_input.blockSignals(False)
 
+                is_coding_strand = self.coding_strand.isChecked()
+                self.sequence_updated.emit(sequence, is_coding_strand)
         if current == "mRNA":
             self.coding_strand.setChecked(True)
             self.coding_strand.setEnabled(False)
@@ -116,8 +149,6 @@ class Base_Button(QPushButton):
         self.setText(new_base)
         self.update_color()
         self.callback(self.strand, self.position, new_base)
-
-
 
 class DNA_Visualizer(QWidget):
     def __init__(self, sequence_changed_callback):
@@ -207,6 +238,36 @@ class DNA_Visualizer(QWidget):
         if self.sequence_changed_callback:
             self.sequence_changed_callback(new_seq)
 
+class Intron_Input(QDialog):
+    def __init__(self, parent = None):
+        super().__init__(parent)
+        self.setWindowTitle("Enter Intron information")
+
+        layout = QVBoxLayout()
+
+        self.position_radio = QRadioButton("Specify Intron position (e.g. 21-42)")
+        self.sequence_radio = QRadioButton("Specify Intron sequences (separated by commas/lines)")
+        self.position_radio.setChecked(True)
+
+        self.radio_group = QButtonGroup()
+        self.radio_group.addButton(self.position_radio)
+        self.radio_group.addButton(self.sequence_radio)
+
+        self.input_field = QTextEdit()
+
+        self.ok_button = QPushButton("OK")
+        self.ok_button.clicked.connect(self.accept)
+
+        layout.addWidget(self.position_radio)
+        layout.addWidget(self.sequence_radio)
+        layout.addWidget(QLabel("Input"))
+        layout.addWidget(self.input_field)
+        layout.addWidget(self.ok_button)
+
+        self.setLayout(layout)
+
+    def Get_Input_Data(self):
+        return ("Positions" if self.position_radio.isChecked() else "Sequences", self.input_field.toPlainText().strip())
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -218,6 +279,7 @@ class MainWindow(QMainWindow):
 
         main_layout = QVBoxLayout()
         self.seq_input = Biological_Sequence_Input()
+        self.seq_input.sequence_updated.connect(self.update_dna_view_with_sequence)
         self.dna_graphics = DNA_Visualizer(self.on_sequence_changed_from_graphics)
 
         self.seq_input.sequence_input.textChanged.connect(self.defer_update_dna_view)
@@ -288,9 +350,23 @@ class MainWindow(QMainWindow):
         if seq_type == "mRNA":
             mrna_sequence = new_sequence.replace('T', 'U')
             self.seq_input.sequence_input.setPlainText(mrna_sequence)
+
+            cursor = self.seq_input.sequence_input.textCursor()
+            cursor.movePosition(cursor.End)
+            self.seq_input.sequence_input.setTextCursor(cursor)
         else:
             self.seq_input.sequence_input.setPlainText(new_sequence)
 
+        self.is_syncing = False
+
+    def update_dna_view_with_sequence(self, sequence, is_coding_strand):
+        if self.is_syncing:
+            return
+        self.is_syncing = True
+        self.seq_input.sequence_input.blockSignals(True)
+        self.seq_input.sequence_input.setPlainText(sequence)
+        self.seq_input.sequence_input.blockSignals(False)
+        self.dna_graphics.Update_DNA_Strands(sequence, is_coding_strand)
         self.is_syncing = False
 
 if __name__ == "__main__":
