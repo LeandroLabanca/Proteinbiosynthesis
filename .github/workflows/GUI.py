@@ -5,7 +5,21 @@ QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel,
 )
 from PyQt5.QtGui import QColor, QPalette
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
-from proteinbiosynthesis import mRNA_to_DNA
+from proteinbiosynthesis import mRNA_to_DNA, Protein_Translation
+
+Bases = ['A', 'T', 'G', 'C']
+Base_Colors = {
+    'A': '#A3E635',
+    'T': '#F87171',
+    'G': '#60A5FA',
+    'C': '#FACC15'
+}
+BASE_PAIR = {
+    'A': 'T',
+    'T': 'A',
+    'G': 'C',
+    'C': 'G'
+}
 
 class Biological_Sequence_Input(QWidget):
     sequence_updated = pyqtSignal(str, bool)
@@ -108,20 +122,6 @@ class Biological_Sequence_Input(QWidget):
         else:
             self.coding_strand.setEnabled(True)
             self.non_coding_strand.setEnabled(True)
-
-Bases = ['A', 'T', 'G', 'C']
-Base_Colors = {
-    'A': '#A3E635',
-    'T': '#F87171',
-    'G': '#60A5FA',
-    'C': '#FACC15'
-}
-BASE_PAIR = {
-    'A': 'T',
-    'T': 'A',
-    'G': 'C',
-    'C': 'G'
-}
 
 class Base_Button(QPushButton):
     def __init__(self, base, strand, position, callback):
@@ -288,6 +288,8 @@ class MainWindow(QMainWindow):
         self._deferred_timer.timeout.connect(self.update_dna_view)
 
         self.Protein_Viewer = QLabel("Protein Viewer Placeholder")
+        self.Translate_Button = QPushButton("Translate to Protein")
+        self.Translate_Button.clicked.connect(self.Run_Translation)
         self.Predict_Button = QPushButton("Predict Secondary Protein Structure")
         self.Result_Viewer = QLabel("Prediction Result Placeholder")
 
@@ -301,6 +303,7 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(QLabel("DNA Strand Visualizer:"))
         main_layout.addWidget(scroll)
         main_layout.addWidget(self.Protein_Viewer)
+        main_layout.addWidget(self.Translate_Button)
         main_layout.addWidget(self.Predict_Button)
         main_layout.addWidget(self.Result_Viewer)
 
@@ -358,6 +361,19 @@ class MainWindow(QMainWindow):
             self.seq_input.sequence_input.setPlainText(new_sequence)
 
         self.is_syncing = False
+
+    def Run_Translation(self):
+        sequence = self.seq_input.sequence_input.toPlainText().upper().replace('\n', '').replace(' ', '')
+        seq_type = self.seq_input.seq_type.currentText()
+        if not sequence:
+            QMessageBox.warning(self, "Please enter a sequence to translate")
+            return
+        else:
+            is_mRNA = seq_type == "mRNA"
+            is_NonCoding_strand = self.seq_input.strand_group.checkedButton().text() == "Non-Coding Strand"
+            protein = Protein_Translation(sequence, is_mRNA)
+            formatted = '\n'.join([protein[i:i+60]for i in range(0, len(protein),60)])
+            self.Protein_Viewer.setText(f"Protein:\n{formatted}")
 
     def update_dna_view_with_sequence(self, sequence, is_coding_strand):
         if self.is_syncing:
