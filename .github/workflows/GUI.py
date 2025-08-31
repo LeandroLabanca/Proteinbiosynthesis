@@ -287,7 +287,11 @@ class MainWindow(QMainWindow):
         self._deferred_timer.setSingleShot(True)
         self._deferred_timer.timeout.connect(self.update_dna_view)
 
-        self.Protein_Viewer = QLabel("Protein Viewer Placeholder")
+        self.Protein_Viewer = QTextEdit()
+        self.Protein_Viewer.setReadOnly(True)
+        self.Protein_Viewer.setPlaceholderText("Protein sequence will be displayed here after translation.")
+        self.Protein_Viewer.setMinimumHeight(100)
+        self.Protein_Viewer.setStyleSheet("font-family: Courier; font-size: 14px;")
         self.Translate_Button = QPushButton("Translate to Protein")
         self.Translate_Button.clicked.connect(self.Run_Translation)
         self.Predict_Button = QPushButton("Predict Secondary Protein Structure")
@@ -384,6 +388,7 @@ class MainWindow(QMainWindow):
         self.seq_input.sequence_input.blockSignals(False)
         self.dna_graphics.Update_DNA_Strands(sequence, is_coding_strand)
         self.is_syncing = False
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
