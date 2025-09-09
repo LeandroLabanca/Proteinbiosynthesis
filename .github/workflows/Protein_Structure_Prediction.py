@@ -4,7 +4,7 @@ from tensorflow.keras.models import load_model
 import tensorflow as tf
 from collections import Counter
 
-amino_acids = "EVKLSGDARMGVMYNGDDWNFSSRSRVLFTMSGTTDSGLEFGASFKAHESVGAETGEDGTVFLSGAFGKIEMGDALGASEALFGDLYEVGYTDLDDRGGNDIPYLTGDERLTAEDNPVLLYTYSAGAFSVAASMSDGKVGETSEDDAQEMAVAAAYTFGNYTVGLGYEKIDSPDTALMADMEQLELAAIAKFGATNVKAYYADGELDRDFARAVFDLTPVAAAATAVDHKAYGLSVDSTFGATTVGGYVQVLDIDTIDDVTYYGLGASYDLGGGASIVGGIADNDLPNSDMVADLGVKFKF"
+
 Amino_Acids = 'ACDEFGHIKLMNPQRSTVWY'
 amino_acid_to_index = {aa: idx for idx, aa in enumerate(Amino_Acids)}
 
@@ -31,7 +31,7 @@ def clean_sequence(seq):
 
 model = load_model("Secondary_Structure_Model.keras")
 
-def Protein_Structure_Prediction():
+def Protein_Structure_Prediction(amino_acids):
     protein = clean_sequence(amino_acids)
     print(f"Cleaned sequence length: {len(protein)}")
     encoded_protein = one_hot_encode_protein(protein)
@@ -45,7 +45,7 @@ def Protein_Structure_Prediction():
     return protein, predicted_labels, counts
 
 
-if input("Type run") == "run":
+#if input("Type run") == "run":
     aa_seq, prediction, counts = Protein_Structure_Prediction()
     print("Structure label counts:", counts)
     print("Amino_Acid_Sequence:", aa_seq)

@@ -6,6 +6,7 @@ QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel,
 from PyQt5.QtGui import QColor, QPalette
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
 from proteinbiosynthesis import mRNA_to_DNA, Protein_Translation
+from Protein_Structure_Prediction import Protein_Structure_Prediction
 
 Bases = ['A', 'T', 'G', 'C']
 Base_Colors = {
@@ -294,8 +295,17 @@ class MainWindow(QMainWindow):
         self.Protein_Viewer.setStyleSheet("font-family: Courier; font-size: 14px;")
         self.Translate_Button = QPushButton("Translate to Protein")
         self.Translate_Button.clicked.connect(self.Run_Translation)
+
         self.Predict_Button = QPushButton("Predict Secondary Protein Structure")
-        self.Result_Viewer = QLabel("Prediction Result Placeholder")
+        self.Predict_Button.clicked.connect(self.Run_Prediction)
+        self.Result_Viewer = QTextEdit()
+        self.Result_Viewer.setReadOnly(True)
+        self.Result_Viewer.setPlaceholderText("Result will be displayed here")
+        self.Result_Viewer.setMinimumHeight(100)
+        self.Result_Viewer.setStyleSheet("font-family: Courier; font-size: 14px;")
+        #self.Copy_Result_Button = QPushButton("Copy Prediction Result")
+        #self.Copy_Result_Button.clicked.connect(self.copy_prediction_to_clipboard)
+
 
         main_layout.addWidget(self.seq_input)
         scroll = QScrollArea()
@@ -310,6 +320,7 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.Translate_Button)
         main_layout.addWidget(self.Predict_Button)
         main_layout.addWidget(self.Result_Viewer)
+        #main_layout.addWidget(self.Copy_Result_Button)
 
         container = QWidget()
         container.setLayout(main_layout)
@@ -369,7 +380,7 @@ class MainWindow(QMainWindow):
     def Run_Translation(self):
         sequence = self.seq_input.sequence_input.toPlainText().upper().replace('\n', '').replace(' ', '')
         seq_type = self.seq_input.seq_type.currentText()
-        if not sequence:
+        if sequence=="":
             QMessageBox.warning(self, "Please enter a sequence to translate")
             return
         else:
@@ -388,6 +399,26 @@ class MainWindow(QMainWindow):
         self.seq_input.sequence_input.blockSignals(False)
         self.dna_graphics.Update_DNA_Strands(sequence, is_coding_strand)
         self.is_syncing = False
+
+    def Run_Prediction(self):
+        protein_seq = self.Protein_Viewer.toPlainText().replace("Protein:\n", "").strip()
+        if not protein_seq:
+            QMessageBox.warning(self, "Please enter a sequence to predict")
+            return
+
+        try:
+            aa_seq, prediction, counts = Protein_Structure_Prediction(protein_seq)
+        except Exception as e:
+            QMessageBox.warning(self, "Prediction error", str(e))
+        formatted_prediction = "\n".join([prediction[i:i+60] for i in range(0, len(prediction),60)])
+        summary = " ".join([f"{label}:{counts[label]}" for label in sorted(counts.keys())])
+        self.Result_Viewer.blockSignals(True)
+        self.Result_Viewer.setPlainText(
+            f"Predicted Structure:\n{formatted_prediction}\n\n"
+            f"Summary:\n{summary}"
+        )
+        self.Result_Viewer.blockSignals(False)
+
 
 
 if __name__ == "__main__":
