@@ -42,10 +42,3 @@ def Protein_Structure_Prediction(amino_acids):
     predicted_labels = ''.join([index_to_label[i]for i in predicted_classes[:len(protein)]])
     counts = Counter(predicted_labels)
     return protein, predicted_labels, counts
-
-
-#if input("Type run") == "run":
-    aa_seq, prediction, counts = Protein_Structure_Prediction()
-    print("Structure label counts:", counts)
-    print("Amino_Acid_Sequence:", aa_seq)
-    print("Prediction:", prediction)
