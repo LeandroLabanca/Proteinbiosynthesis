@@ -386,7 +386,7 @@ class MainWindow(QMainWindow):
         else:
             is_mRNA = seq_type == "mRNA"
             is_NonCoding_strand = self.seq_input.strand_group.checkedButton().text() == "Non-Coding Strand"
-            protein = Protein_Translation(sequence, is_mRNA)
+            protein = Protein_Translation(sequence, is_mRNA, is_NonCoding_strand)
             formatted = '\n'.join([protein[i:i+60]for i in range(0, len(protein),60)])
             self.Protein_Viewer.setText(f"Protein:\n{formatted}")
 
@@ -402,6 +402,7 @@ class MainWindow(QMainWindow):
 
     def Run_Prediction(self):
         protein_seq = self.Protein_Viewer.toPlainText().replace("Protein:\n", "").strip()
+        print(protein_seq)
         if not protein_seq:
             QMessageBox.warning(self, "Please enter a sequence to predict")
             return
@@ -419,7 +420,6 @@ class MainWindow(QMainWindow):
             f"Summary:\n{summary}"
         )
         self.Result_Viewer.blockSignals(False)
-
 
 
 if __name__ == "__main__":
