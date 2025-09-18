@@ -410,6 +410,7 @@ class MainWindow(QMainWindow):
             aa_seq, prediction, counts = Protein_Structure_Prediction(protein_seq)
         except Exception as e:
             QMessageBox.warning(self, "Prediction error", str(e))
+            return
         formatted_prediction = "\n".join([prediction[i:i+60] for i in range(0, len(prediction),60)])
         summary = " ".join([f"{label}:{counts[label]}" for label in sorted(counts.keys())])
         self.Result_Viewer.blockSignals(True)
