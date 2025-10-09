@@ -7,7 +7,7 @@ def mRNA_to_DNA(mRNA_sequence: str)->str:
         print(f"Error during back-transcription: {e}")
         return ""
 
-def Protein_Translation(nucleotide_sequence: str, is_mRNA: bool = False, is_NonCoding_Strand: bool = False)->str:
+def Protein_Translation(nucleotide_sequence, is_mRNA, is_NonCoding_Strand):
     seq = Seq(nucleotide_sequence.upper().replace("\n", "").replace(" ", ""))
     if is_NonCoding_Strand:
         seq = seq.reverse_complement()

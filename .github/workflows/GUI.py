@@ -1,7 +1,8 @@
 import sys
 from operator import index
 from PyQt5.QtWidgets import (
-QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel, QPushButton, QComboBox, QRadioButton, QButtonGroup, QMessageBox, QScrollArea, QFrame, QInputDialog, QDialog
+QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTextEdit, QLabel,
+QPushButton, QComboBox, QRadioButton, QButtonGroup, QMessageBox, QScrollArea, QDialog
 )
 from PyQt5.QtGui import QColor, QPalette
 from PyQt5.QtCore import QTimer, Qt, pyqtSignal
@@ -124,28 +125,33 @@ class Biological_Sequence_Input(QWidget):
             self.coding_strand.setEnabled(True)
             self.non_coding_strand.setEnabled(True)
 
+#Create a new class for the buttons used in the DNA Visualizer as bases
 class Base_Button(QPushButton):
     def __init__(self, base, strand, position, callback):
         super().__init__(base)
+        #set the strand, position and callback, which gets input as argument
         self.strand = strand
         self.position = position
         self.callback = callback
+        #set button size and connect functions
         self.setFixedSize(30,30)
         self.update_color()
         self.clicked.connect(self.cycle_base)
-
     def update_color(self):
+        #set base from string, get corresponding color from palette
         base = self.text()
         color = Base_Colors.get(base, '#E5E7EB')
         pal = self.palette()
+        #set base button color and style of button
         pal.setColor(QPalette.Button, QColor(color))
         self.setAutoFillBackground(True)
         self.setPalette(pal)
         self.setStyleSheet(f"background-color: {color}; border : 1px solid #333;")
-
     def cycle_base(self):
+        #store current amino acid and get index of current amino acid unless not in amino acid list
         current = self.text()
         i = Bases.index(current) if current in Bases else 0
+        #cycle to the next base and update its color
         new_base = Bases[(i+1)%len(Bases)]
         self.setText(new_base)
         self.update_color()
