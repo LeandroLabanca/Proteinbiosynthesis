@@ -86,7 +86,7 @@ class Biological_Sequence_Input(QWidget):
             Dialog = Intron_Input(self)
             if Dialog.exec_() == QDialog.Accepted:
                 Mode, Data = Dialog.Get_Input_Data()
-                Sequence = self.Sequence_Input.toPlainText().upper()
+                Sequence = self.Sequence_Input
                 if Mode == "Positions":
                     try:
                         Intron_Ranges = []
@@ -302,16 +302,13 @@ class MainWindow(QMainWindow):
         self.Translate_Button = QPushButton("Translate to Protein")
         self.Translate_Button.clicked.connect(self.Run_Translation)
 
-        self.Predict_Button = QPushButton("Predict Secondary Protein Structure")
+        self.Predict_Button = QPushButton("Predict Protein Secondary Structure")
         self.Predict_Button.clicked.connect(self.Run_Prediction)
         self.Result_Viewer = QTextEdit()
         self.Result_Viewer.setReadOnly(True)
         self.Result_Viewer.setPlaceholderText("Result will be displayed here")
         self.Result_Viewer.setMinimumHeight(100)
         self.Result_Viewer.setStyleSheet("font-family: Courier; font-size: 14px;")
-        #self.Copy_Result_Button = QPushButton("Copy Prediction Result")
-        #self.Copy_Result_Button.clicked.connect(self.copy_prediction_to_clipboard)
-
 
         Main_Layout.addWidget(self.Seq_Input)
         Scroll = QScrollArea()
@@ -326,7 +323,7 @@ class MainWindow(QMainWindow):
         Main_Layout.addWidget(self.Translate_Button)
         Main_Layout.addWidget(self.Predict_Button)
         Main_Layout.addWidget(self.Result_Viewer)
-        #Main_Layout.addWidget(self.Copy_Result_Button)
+
 
         Container = QWidget()
         Container.setLayout(Main_Layout)
@@ -393,8 +390,7 @@ class MainWindow(QMainWindow):
             Is_mRNA = Seq_Type == "mRNA"
             Is_Non_Coding_strand = self.Seq_Input.Strand_Group.checkedButton().text() == "Non-Coding Strand"
             Protein = Protein_Translation(Sequence, Is_mRNA, Is_Non_Coding_strand)
-            Formatted = '\n'.join([Protein[i:i+60]for i in range(0, len(Protein),60)])
-            self.Protein_Viewer.setText(f"Protein:\n{Formatted}")
+            self.Protein_Viewer.setText(f"Protein:\n{Protein}")
 
     def Update_Dna_View_With_Sequence(self, Sequence, Is_Coding_Strand):
         if self.Is_Syncing:
@@ -418,11 +414,10 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.warning(self, "Prediction error", str(e))
             return
-        Formatted_Prediction = "\n".join([Prediction[i:i+60] for i in range(0, len(Prediction),60)])
         Summary = " ".join([f"{label}:{Counts[label]}" for label in sorted(Counts.keys())])
         self.Result_Viewer.blockSignals(True)
         self.Result_Viewer.setPlainText(
-            f"Predicted Structure:\n{Formatted_Prediction}\n\n"
+            f"Predicted Structure:\n{Prediction}\n\n"
             f"Summary:\n{Summary}"
         )
         self.Result_Viewer.blockSignals(False)

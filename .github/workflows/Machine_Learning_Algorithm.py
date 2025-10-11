@@ -1,5 +1,5 @@
 from Machine_Learning_Data import X_Train, Y_Train, X_Validation, Y_Validation, X_Cb, Y_Cb
-#import tensorflow as tf
+
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv1D, Dropout, TimeDistributed, Dense
 
@@ -17,3 +17,4 @@ Machine_Learning_Model.fit(X_Train, Y_Train, validation_data=(X_Validation, Y_Va
 Machine_Learning_Model.evaluate(X_Cb, Y_Cb)
 
 Machine_Learning_Model.save("Secondary_Structure_Model.keras")
+
